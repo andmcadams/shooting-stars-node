@@ -32,7 +32,7 @@ async function updateDb(key, loc, world, minTime, maxTime) {
 
 app.use(express.json());
 app.use(limiter);
-app.post("/stars", (req, res) => {
+app.post("/stars", async (req, res) => {
   console.log(req.body);
   console.log(req.headers.authorization);
 
