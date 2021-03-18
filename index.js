@@ -11,37 +11,23 @@ const limiter = rateLimit({
   max: 30,
 });
 
-function updateDb(key, loc, world, minTime, maxTime) {
-  // Check for worlds where world = this and maxTime is >
-  // this means there can't be another star already
-  let sql = `SELECT COUNT(*) FROM data WHERE world = ? AND maxTime > ? and sharedKey = ?`;
-  db.get(
-    sql,
-    [world, minTime, key],
-    function (err, row) {
-      if (err) {
-        console.error(err);
-      }
-      if (row["COUNT(*)"] > 0)
-        console.log(`Already have this world: ${this.world}.`);
-      else {
-        console.log(
-          `Adding row: ${this.loc}, ${this.world}, ${this.minTime}, ${this.maxTime}, ${this.sharedKey}`
-        );
-        db.run(
-          `INSERT INTO data(location, world, minTime, maxTime, sharedKey) VALUES(?, ?, ?, ?, ?)`,
-          [this.loc, this.world, this.minTime, this.maxTime, this.sharedKey],
-          function (err) {
-            if (err) console.log("Error");
-          }
-        );
-      }
-    }.bind({ loc, world, minTime, maxTime, key })
-  );
-}
+async function updateDb(key, loc, world, minTime, maxTime) {
 
-function stripKey(authorizationHeader) {
-	return authorizationHeader
+  const sql = `SELECT COUNT(*) FROM data WHERE world = ? AND maxTime > ? AND sharedKey = ?`;
+  try {
+	const result = await db.get(sql, [world, minTime, key]);
+	if (row["COUNT(*)"] > 0)
+		console.log(`Already have this world: ${world}.`);
+	else {
+		console.log(
+		`Adding row: ${loc}, ${world}, ${minTime}, ${maxTime}, ${sharedKey}`
+		);
+		const sql2 = `INSERT INTO data(location, world, minTime, maxTime, sharedKey) VALUES(?, ?, ?, ?, ?)`
+		db.run(sql2, [loc, world, minTime, maxTime, sharedKey]);
+	}
+  } catch(err) {
+	console.error(err);
+  }
 }
 
 app.use(express.json());
@@ -49,25 +35,36 @@ app.use(limiter);
 app.post("/stars", (req, res) => {
   console.log(req.body);
   console.log(req.headers.authorization);
-  const key = req.headers.authorization;
+
+  if (req.headers.authorization === undefined)
+    return res.status(400).send({ error: "Missing Authorization header" });
+
+  // Keys should only be max 10 characters
+  const key = req.headers.authorization.substring(0, 10);
+
   for (let i in req.body) {
     let datapoint = req.body[i];
     const { loc, world, minTime, maxTime } = req.body[i];
-    updateDb(key, loc, world, minTime, maxTime);
+    await updateDb(key, loc, world, minTime, maxTime);
   }
   return res.send("Shooting star data received");
 });
 
-app.get("/stars", (req, res) => {
-  let sql = `SELECT * FROM data where maxTime > ? ORDER BY minTime`;
-  db.all(sql, [Math.floor(Date.now() / 1000)], (err, row) => {
+app.get("/stars", async (req, res) => {
+  if (req.headers.authorization === undefined)
+    return res.status(400).send({ error: "Missing Authorization header" });
+
+  // Keys should only be max 10 characters
+  const key = req.headers.authorization.substring(0, 10);
+
+  let sql = `SELECT * FROM data WHERE maxTime > ? AND sharedKey = ? ORDER BY minTime`;
+  db.all(sql, [Math.floor(Date.now() / 1000), key], (err, rows) => {
     if (err) {
-      console.log("get error");
       console.log(err);
       return res.status(500);
     }
 
-    return res.send(row);
+    return res.send(rows);
   });
 });
 
