@@ -31,7 +31,7 @@ async function updateDb(key, loc, world, minTime, maxTime) {
 }
 
 function validateSharedKey(sharedKey) {
-	return /^[a-zA-Z0-9]+$/.test(sharedKey) && length(sharedKey) != 0;
+	return /^[a-zA-Z0-9]+$/.test(sharedKey) && sharedKey.length != 0;
 }
 
 app.use(express.json());
