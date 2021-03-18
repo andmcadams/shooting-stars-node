@@ -30,6 +30,10 @@ async function updateDb(key, loc, world, minTime, maxTime) {
   }
 }
 
+function validateSharedKey(sharedKey) {
+	return /^[a-zA-Z0-9]+$/.test(sharedKey) && length(sharedKey) != 0;
+}
+
 app.use(express.json());
 app.use(limiter);
 app.post("/stars", async (req, res) => {
@@ -38,6 +42,9 @@ app.post("/stars", async (req, res) => {
 
   if (req.headers.authorization === undefined)
     return res.status(400).send({ error: "Missing Authorization header" });
+
+  if (validateSharedKey(req.headers.authorization) == false)
+	return res.status(400).send({ error: "Shared key in Authorization header must be alphanumberic" })
 
   // Keys should only be max 10 characters
   const key = req.headers.authorization.substring(0, 10);
@@ -51,8 +58,11 @@ app.post("/stars", async (req, res) => {
 });
 
 app.get("/stars", async (req, res) => {
-  if (req.headers.authorization === undefined)
+	if (req.headers.authorization === undefined)
     return res.status(400).send({ error: "Missing Authorization header" });
+
+  if (validateSharedKey(req.headers.authorization) == false)
+	return res.status(400).send({ error: "Shared key in Authorization header must be alphanumberic" })
 
   // Keys should only be max 10 characters
   const key = req.headers.authorization.substring(0, 10);
