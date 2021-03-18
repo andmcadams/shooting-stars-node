@@ -14,10 +14,10 @@ const limiter = rateLimit({
 function updateDb(key, loc, world, minTime, maxTime) {
   // Check for worlds where world = this and maxTime is >
   // this means there can't be another star already
-  let sql = `SELECT COUNT(*) FROM data WHERE world = ? AND maxTime > ? and key = ?`;
+  let sql = `SELECT COUNT(*) FROM data WHERE world = ? AND maxTime > ? and sharedKey = ?`;
   db.get(
     sql,
-    [world, minTime],
+    [world, minTime, key],
     function (err, row) {
       if (err) {
         console.error(err);
@@ -26,18 +26,22 @@ function updateDb(key, loc, world, minTime, maxTime) {
         console.log(`Already have this world: ${this.world}.`);
       else {
         console.log(
-          `Adding row: ${this.loc}, ${this.world}, ${this.minTime}, ${this.maxTime}`
+          `Adding row: ${this.loc}, ${this.world}, ${this.minTime}, ${this.maxTime}, ${this.sharedKey}`
         );
         db.run(
-          `INSERT INTO data(location, world, minTime, maxTime) VALUES(?, ?, ?, ?)`,
-          [this.loc, this.world, this.minTime, this.maxTime],
+          `INSERT INTO data(location, world, minTime, maxTime, sharedKey) VALUES(?, ?, ?, ?, ?)`,
+          [this.loc, this.world, this.minTime, this.maxTime, this.sharedKey],
           function (err) {
             if (err) console.log("Error");
           }
         );
       }
-    }.bind({ loc, world, minTime, maxTime })
+    }.bind({ loc, world, minTime, maxTime, key })
   );
+}
+
+function stripKey(authorizationHeader) {
+	return authorizationHeader
 }
 
 app.use(express.json());
@@ -49,7 +53,7 @@ app.post("/stars", (req, res) => {
   for (let i in req.body) {
     let datapoint = req.body[i];
     const { loc, world, minTime, maxTime } = req.body[i];
-    updateDb(loc, world, minTime, maxTime);
+    updateDb(key, loc, world, minTime, maxTime);
   }
   return res.send("Shooting star data received");
 });
