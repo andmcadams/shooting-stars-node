@@ -11,21 +11,26 @@ const limiter = rateLimit({
   max: 30,
 });
 
-async function updateDb(sharedKey, loc, world, minTime, maxTime) {
-  const sql = `SELECT COUNT(*) FROM data WHERE world = ? AND maxTime > ? AND sharedKey LIKE ?`;
-  try {
-    const row = db.get(sql, [world, minTime, sharedKey]);
-    if (row["COUNT(*)"] > 0) console.log(`Already have this world: ${world}.`);
-    else {
-      console.log(
-        `Adding row: ${loc}, ${world}, ${minTime}, ${maxTime}, ${sharedKey}`
-      );
-      const sql2 = `INSERT INTO data(location, world, minTime, maxTime, sharedKey) VALUES(?, ?, ?, ?, ?)`;
-      db.run(sql2, [loc, world, minTime, maxTime, sharedKey]);
-    }
-  } catch (err) {
-    console.error(err);
-  }
+function updateDb(sharedKey, loc, world, minTime, maxTime) {
+  const sql = `SELECT COUNT(*) FROM data WHERE world = ? AND maxTime > ? AND sharedKey = ?`;
+  db.get(sql, [world, minTime, sharedKey], function (err, row) {
+	  if (err) {
+		console.error(err);
+		return;
+	  }
+	  if (row["COUNT(*)"] > 0)
+	  	console.log(`Already have this world: ${this.world}.`);
+	  else {
+		console.log(
+			`Adding row: ${this.loc}, ${this.world}, ${this.minTime}, ${this.maxTime}, ${this.sharedKey}`
+		  );
+		  const sql2 = `INSERT INTO data(location, world, minTime, maxTime, sharedKey) VALUES(?, ?, ?, ?, ?)`;
+		  db.run(sql2, [this.loc, this.world, this.minTime, this.maxTime, this.sharedKey], (err) => {
+			  if (err)
+			  	console.log(err)
+		  });
+	  }
+  }.bind({sharedKey, loc, world, minTime, maxTime}));
 }
 
 function validateSharedKey(sharedKey) {
@@ -71,7 +76,7 @@ app.post("/stars", async (req, res) => {
       continue;
     }
 
-    await updateDb(key, loc, world, minTime, maxTime);
+    updateDb(key, loc, world, minTime, maxTime);
   }
   return res.send("Shooting star data received");
 });
@@ -88,7 +93,7 @@ app.get("/stars", (req, res) => {
   // Keys should only be max 10 characters
   const key = req.headers.authorization.substring(0, 10);
 
-  let sql = `SELECT * FROM data WHERE maxTime > ? AND sharedKey LIKE ? ORDER BY minTime`;
+  let sql = `SELECT * FROM data WHERE maxTime > ? AND sharedKey = ? ORDER BY minTime`;
   db.all(sql, [Math.floor(Date.now() / 1000), key], (err, rows) => {
     if (err) {
       console.log(err);
