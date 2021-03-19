@@ -14,7 +14,7 @@ const limiter = rateLimit({
 async function updateDb(key, loc, world, minTime, maxTime) {
   const sql = `SELECT COUNT(*) FROM data WHERE world = ? AND maxTime > ? AND sharedKey = ?`;
   try {
-    const result = await db.get(sql, [world, minTime, key]);
+    const row = await db.get(sql, [world, minTime, key]);
     if (row["COUNT(*)"] > 0) console.log(`Already have this world: ${world}.`);
     else {
       console.log(
