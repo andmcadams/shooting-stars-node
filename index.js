@@ -12,7 +12,7 @@ const limiter = rateLimit({
 });
 
 async function updateDb(sharedKey, loc, world, minTime, maxTime) {
-  const sql = `SELECT COUNT(*) FROM data WHERE world = ? AND maxTime > ? AND sharedKey = "?"`;
+  const sql = `SELECT COUNT(*) FROM data WHERE world = ? AND maxTime > ? AND sharedKey LIKE ?`;
   try {
     const row = db.get(sql, [world, minTime, sharedKey]);
     if (row["COUNT(*)"] > 0) console.log(`Already have this world: ${world}.`);
@@ -88,7 +88,7 @@ app.get("/stars", (req, res) => {
   // Keys should only be max 10 characters
   const key = req.headers.authorization.substring(0, 10);
 
-  let sql = `SELECT * FROM data WHERE maxTime > ? AND sharedKey = ? ORDER BY minTime`;
+  let sql = `SELECT * FROM data WHERE maxTime > ? AND sharedKey LIKE ? ORDER BY minTime`;
   db.all(sql, [Math.floor(Date.now() / 1000), key], (err, rows) => {
     if (err) {
       console.log(err);
