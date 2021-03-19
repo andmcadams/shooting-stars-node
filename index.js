@@ -35,15 +35,12 @@ function validateSharedKey(sharedKey) {
 app.use(express.json());
 app.use(limiter);
 app.post("/stars", async (req, res) => {
-  console.log(req.body);
-  console.log(req.headers.authorization);
-
   if (req.headers.authorization === undefined)
     return res.status(400).send({ error: "Missing Authorization header" });
 
   if (validateSharedKey(req.headers.authorization) == false)
     return res.status(400).send({
-      error: "Shared key in Authorization header must be alphanumberic",
+      error: "Shared key in Authorization header must be alphanumeric",
     });
 
   // Keys should only be max 10 characters
@@ -85,7 +82,7 @@ app.get("/stars", (req, res) => {
 
   if (validateSharedKey(req.headers.authorization) == false)
     return res.status(400).send({
-      error: "Shared key in Authorization header must be alphanumberic",
+      error: "Shared key in Authorization header must be alphanumeric",
     });
 
   // Keys should only be max 10 characters
