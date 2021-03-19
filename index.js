@@ -12,26 +12,24 @@ const limiter = rateLimit({
 });
 
 async function updateDb(key, loc, world, minTime, maxTime) {
-
   const sql = `SELECT COUNT(*) FROM data WHERE world = ? AND maxTime > ? AND sharedKey = ?`;
   try {
-	const result = await db.get(sql, [world, minTime, key]);
-	if (row["COUNT(*)"] > 0)
-		console.log(`Already have this world: ${world}.`);
-	else {
-		console.log(
-		`Adding row: ${loc}, ${world}, ${minTime}, ${maxTime}, ${sharedKey}`
-		);
-		const sql2 = `INSERT INTO data(location, world, minTime, maxTime, sharedKey) VALUES(?, ?, ?, ?, ?)`
-		db.run(sql2, [loc, world, minTime, maxTime, sharedKey]);
-	}
-  } catch(err) {
-	console.error(err);
+    const result = await db.get(sql, [world, minTime, key]);
+    if (row["COUNT(*)"] > 0) console.log(`Already have this world: ${world}.`);
+    else {
+      console.log(
+        `Adding row: ${loc}, ${world}, ${minTime}, ${maxTime}, ${sharedKey}`
+      );
+      const sql2 = `INSERT INTO data(location, world, minTime, maxTime, sharedKey) VALUES(?, ?, ?, ?, ?)`;
+      db.run(sql2, [loc, world, minTime, maxTime, sharedKey]);
+    }
+  } catch (err) {
+    console.error(err);
   }
 }
 
 function validateSharedKey(sharedKey) {
-	return /^[a-zA-Z0-9]+$/.test(sharedKey) && sharedKey.length != 0;
+  return /^[a-zA-Z0-9]+$/.test(sharedKey) && sharedKey.length != 0;
 }
 
 app.use(express.json());
@@ -44,25 +42,47 @@ app.post("/stars", async (req, res) => {
     return res.status(400).send({ error: "Missing Authorization header" });
 
   if (validateSharedKey(req.headers.authorization) == false)
-	return res.status(400).send({ error: "Shared key in Authorization header must be alphanumberic" })
+    return res.status(400).send({
+      error: "Shared key in Authorization header must be alphanumberic",
+    });
 
   // Keys should only be max 10 characters
   const key = req.headers.authorization.substring(0, 10);
 
+  if (!Array.isArray(req.body))
+    return res.status(400).send({ error: "Body needs to be an array" });
+
   for (let i in req.body) {
-    let datapoint = req.body[i];
     const { loc, world, minTime, maxTime } = req.body[i];
-    await updateDb(key, loc, world, minTime, maxTime);
+	// There's probably a lib for this
+    if (
+      loc === undefined ||
+      world === undefined ||
+      minTime === undefined ||
+      maxTime === undefined
+    ) {
+      console.log(`Skipping obj: ${loc}, ${world}, ${minTime}, ${maxTime}`);
+      continue;
+    }
+    if (
+      loc === parseInt(loc, 10) &&
+      world === parseInt(world, 10) &&
+      minTime === parseInt(minTime, 10) &&
+      maxTime === parseInt(maxTime, 10)
+    )
+      await updateDb(key, loc, world, minTime, maxTime);
   }
   return res.send("Shooting star data received");
 });
 
-app.get("/stars", async (req, res) => {
-	if (req.headers.authorization === undefined)
+app.get("/stars", (req, res) => {
+  if (req.headers.authorization === undefined)
     return res.status(400).send({ error: "Missing Authorization header" });
 
   if (validateSharedKey(req.headers.authorization) == false)
-	return res.status(400).send({ error: "Shared key in Authorization header must be alphanumberic" })
+    return res.status(400).send({
+      error: "Shared key in Authorization header must be alphanumberic",
+    });
 
   // Keys should only be max 10 characters
   const key = req.headers.authorization.substring(0, 10);
