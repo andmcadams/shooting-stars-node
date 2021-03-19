@@ -65,9 +65,9 @@ app.post("/stars", async (req, res) => {
       continue;
     }
     if (
-      loc !== parseInt(loc, 10) &&
-      world !== parseInt(world, 10) &&
-      minTime !== parseInt(minTime, 10) &&
+      loc !== parseInt(loc, 10) ||
+      world !== parseInt(world, 10) ||
+      minTime !== parseInt(minTime, 10) ||
       maxTime !== parseInt(maxTime, 10)
     ) {
       console.log(`Skipping obj: ${loc}, ${world}, ${minTime}, ${maxTime}`);
