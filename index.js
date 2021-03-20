@@ -34,7 +34,7 @@ function updateDb(sharedKey, loc, world, minTime, maxTime) {
 }
 
 function validateSharedKey(sharedKey) {
-  return /^[a-zA-Z0-9]+$/.test(sharedKey) && sharedKey.length != 0;
+  return /^[a-zA-Z]+$/.test(sharedKey) && sharedKey.length != 0;
 }
 
 app.use(express.json());
@@ -45,7 +45,7 @@ app.post("/stars", async (req, res) => {
 
   if (validateSharedKey(req.headers.authorization) == false)
     return res.status(400).send({
-      error: "Shared key in Authorization header must be alphanumeric",
+      error: "Shared key in Authorization header must be alpha only",
     });
 
   // Keys should only be max 10 characters
@@ -87,7 +87,7 @@ app.get("/stars", (req, res) => {
 
   if (validateSharedKey(req.headers.authorization) == false)
     return res.status(400).send({
-      error: "Shared key in Authorization header must be alphanumeric",
+      error: "Shared key in Authorization header must be alpha only",
     });
 
   // Keys should only be max 10 characters
