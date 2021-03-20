@@ -12,17 +12,28 @@ const limiter = rateLimit({
 });
 
 function updateDb(sharedKey, loc, world, minTime, maxTime) {
-  const sql = `SELECT COUNT(*) FROM data WHERE world = ? AND maxTime > ? AND sharedKey = ?`;
+  const sql = `SELECT COUNT(*), minTime, maxTime FROM data WHERE world = ? AND maxTime > ? AND sharedKey = ?`;
   db.get(sql, [world, minTime, sharedKey], function (err, row) {
 	  if (err) {
-		console.error(err);
-		return;
+		  console.error(err);
+		  return;
 	  }
 	  if (row["COUNT(*)"] > 0)
+    {
 	  	console.log(`Already have this world: ${this.world}.`);
-	  else {
-		console.log(
-			`Adding row: ${this.loc}, ${this.world}, ${this.minTime}, ${this.maxTime}, ${this.sharedKey}`
+      let newMinTime = Math.max(row['minTime'], this.minTime)
+      let newMaxTime = Math.min(row['maxTime'], this.maxTime)
+      if (newMinTime <= newMaxTime)
+      {
+        const sql2 = `UPDATE data SET minTime = ?, maxTime = ? where world = ? and sharedKey = ?`
+        db.run(sql2, [newMinTime, newMaxTime, this.world, this.sharedKey])
+      }
+      else
+        console.error(`newMin > newMax, ignoring for ${this.world}: ${this.key}`);
+	  }
+    else {
+		  console.log(
+			  `Adding row: ${this.loc}, ${this.world}, ${this.minTime}, ${this.maxTime}, ${this.sharedKey}`
 		  );
 		  const sql2 = `INSERT INTO data(location, world, minTime, maxTime, sharedKey) VALUES(?, ?, ?, ?, ?)`;
 		  db.run(sql2, [this.loc, this.world, this.minTime, this.maxTime, this.sharedKey], (err) => {
