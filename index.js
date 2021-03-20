@@ -105,7 +105,7 @@ app.get("/stars", (req, res) => {
   const key = req.headers.authorization.substring(0, 10);
 
   let sql = `SELECT * FROM data WHERE maxTime > ? AND sharedKey = ? ORDER BY minTime`;
-  db.all(sql, [Math.floor(Date.now() / 1000), key], (err, rows) => {
+  db.all(sql, [Math.floor(Date.now() / 1000)-180, key], (err, rows) => {
     if (err) {
       console.log(err);
       return res.status(500);
