@@ -12,21 +12,22 @@ const limiter = rateLimit({
 });
 
 function updateDb(sharedKey, loc, world, minTime, maxTime) {
-  const sql = `SELECT COUNT(*), minTime, maxTime FROM data WHERE world = ? AND maxTime > ? AND sharedKey = ?`;
-  db.get(sql, [world, minTime, sharedKey], function (err, row) {
+  const sql = `SELECT ROWID, minTime, maxTime FROM data WHERE world = ? AND maxTime > ? AND sharedKey = ? ORDER BY ROWID DESC`;
+  db.all(sql, [world, minTime-600, sharedKey], function (err, rows) {
 	  if (err) {
 		  console.error(err);
 		  return;
 	  }
-	  if (row["COUNT(*)"] > 0)
+	  if (rows.length > 0)
     {
+      let row = rows[0];
 	  	console.log(`Already have this world: ${this.world}.`);
       let newMinTime = Math.max(row['minTime'], this.minTime)
       let newMaxTime = Math.min(row['maxTime'], this.maxTime)
       if (newMinTime <= newMaxTime)
       {
-        const sql2 = `UPDATE data SET minTime = ?, maxTime = ? where world = ? and sharedKey = ?`
-        db.run(sql2, [newMinTime, newMaxTime, this.world, this.sharedKey])
+        const sql2 = `UPDATE data SET minTime = ?, maxTime = ? where ROWID = ?`
+        db.run(sql2, [newMinTime, newMaxTime, row['ROWID']])
       }
       else
         console.error(`newMin > newMax, ignoring for ${this.world}: ${this.key}`);
@@ -104,8 +105,8 @@ app.get("/stars", (req, res) => {
   // Keys should only be max 10 characters
   const key = req.headers.authorization.substring(0, 10);
 
-  let sql = `SELECT * FROM data WHERE maxTime > ? AND sharedKey = ? ORDER BY minTime`;
-  db.all(sql, [Math.floor(Date.now() / 1000)-180, key], (err, rows) => {
+  let sql = `SELECT * FROM data WHERE maxTime > ? AND sharedKey = ? ORDER BY maxTime`;
+  db.all(sql, [Math.floor(Date.now() / 1000)-300, key], (err, rows) => {
     if (err) {
       console.log(err);
       return res.status(500);
