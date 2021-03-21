@@ -12,22 +12,22 @@ const limiter = rateLimit({
 });
 
 function updateDb(sharedKey, loc, world, minTime, maxTime) {
-  const sql = `SELECT ROWID, minTime, maxTime FROM data WHERE world = ? AND maxTime > ? AND sharedKey = ? ORDER BY ROWID DESC`;
-  db.all(sql, [world, minTime-600, sharedKey], function (err, rows) {
+  const sql = `SELECT ROWID as rowid, minTime, maxTime FROM data WHERE world = ? AND maxTime > ? AND sharedKey = ? ORDER BY ROWID DESC`;
+  db.get(sql, [world, minTime-600, sharedKey], function (err, row) {
 	  if (err) {
 		  console.error(err);
 		  return;
 	  }
-	  if (rows.length > 0)
+	  if (row !== undefined)
     {
-      let row = rows[0];
 	  	console.log(`Already have this world: ${this.world}.`);
       let newMinTime = Math.max(row['minTime'], this.minTime)
       let newMaxTime = Math.min(row['maxTime'], this.maxTime)
       if (newMinTime <= newMaxTime)
       {
         const sql2 = `UPDATE data SET minTime = ?, maxTime = ? where ROWID = ?`
-        db.run(sql2, [newMinTime, newMaxTime, row['ROWID']])
+        console.log(`Updating time to ${newMinTime} - ${newMaxTime}, ${row['rowid']}`)
+        db.run(sql2, [newMinTime, newMaxTime, row['rowid']])
       }
       else
         console.error(`newMin > newMax, ignoring for ${this.world}: ${this.key}`);
