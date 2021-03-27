@@ -88,6 +88,11 @@ app.post("/stars", async (req, res) => {
       continue;
     }
 
+    if (maxTime - minTime < 120 || maxTime - minTime > 60*26 || world > 535 || world < 301) {
+      console.log(`Skipping obj: ${loc}, ${world}, ${minTime}, ${maxTime}`);
+      continue;
+    }
+
     updateDb(key, loc, world, minTime, maxTime);
   }
   return res.send("Shooting star data received");
@@ -105,8 +110,8 @@ app.get("/stars", (req, res) => {
   // Keys should only be max 10 characters
   const key = req.headers.authorization.substring(0, 10);
 
-  let sql = `SELECT * FROM data WHERE maxTime > ? AND sharedKey = ? ORDER BY maxTime`;
-  db.all(sql, [Math.floor(Date.now() / 1000)-300, key], (err, rows) => {
+  let sql = `SELECT * FROM data WHERE maxTime > ? AND maxTime < ? AND sharedKey = ? ORDER BY maxTime`;
+  db.all(sql, [Math.floor(Date.now() / 1000)-300, Math.floor(Date.now() / 1000)+(60*140), key], (err, rows) => {
     if (err) {
       console.log(err);
       return res.status(500);
