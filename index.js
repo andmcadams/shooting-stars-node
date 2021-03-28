@@ -75,7 +75,7 @@ app.post("/stars", async (req, res) => {
       minTime === undefined ||
       maxTime === undefined
     ) {
-      console.log(`Skipping obj: ${loc}, ${world}, ${minTime}, ${maxTime}`);
+      console.log(`Skipping obj (undefined issue): ${loc}, ${world}, ${minTime}, ${maxTime}`);
       continue;
     }
     if (
@@ -84,12 +84,20 @@ app.post("/stars", async (req, res) => {
       minTime !== parseInt(minTime, 10) ||
       maxTime !== parseInt(maxTime, 10)
     ) {
-      console.log(`Skipping obj: ${loc}, ${world}, ${minTime}, ${maxTime}`);
+      console.log(`Skipping obj (non int issue): ${loc}, ${world}, ${minTime}, ${maxTime}`);
       continue;
     }
 
-    if (maxTime - minTime < 120 || maxTime - minTime > 60*26 || world > 535 || world < 301) {
-      console.log(`Skipping obj: ${loc}, ${world}, ${minTime}, ${maxTime}`);
+    if (maxTime - minTime < 60*2 || maxTime - minTime > 60*26 || world > 535 || world < 301) {
+      console.log(`Skipping obj (time or world issue): ${loc}, ${world}, ${minTime}, ${maxTime}`);
+      continue;
+    }
+    if (loc > 13 || loc < 0) {
+      console.log(`Skipping obj (loc issue): ${loc}, ${world}, ${minTime}, ${maxTime}`);
+      continue;
+    }
+    if (maxTime - Math.floor(Date.now() / 1000) > 9660 || minTime > maxTime) {
+      console.log(`Skipping obj (too late or flipped time issue): ${loc}, ${world}, ${minTime}, ${maxTime}`);
       continue;
     }
 
